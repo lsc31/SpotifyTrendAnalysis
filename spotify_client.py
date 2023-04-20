@@ -125,29 +125,31 @@ class SpotifyAPI(object):
         return self.base_search(query_params)
 
 
-client = SpotifyAPI(client_id, client_secret)
-client.perform_auth()
-# print(client.get_access_token())
-# print(client.base_search())
-data = client.base_search()
+def get_data():
+    client = SpotifyAPI(client_id, client_secret)
+    client.perform_auth()
+    # print(client.get_access_token())
+    # print(client.base_search())
+    data = client.base_search()
+    return data
 
-# write to csv
-tracks = data['tracks']
-items = tracks['items']
-data_file = open('data_file.csv', 'w')
-csv_writer = csv.writer(data_file)
+# # write to csv
+# tracks = data['tracks']
+# items = tracks['items']
+# data_file = open('data_file.csv', 'w')
+# csv_writer = csv.writer(data_file)
 
-count = 0
+# count = 0
  
-for song in items:
-    if count == 0:
+# for song in items:
+#     if count == 0:
  
-        # Writing headers of CSV file
-        header = song.keys()
-        csv_writer.writerow(header)
-        count += 1
+#         # Writing headers of CSV file
+#         header = song.keys()
+#         csv_writer.writerow(header)
+#         count += 1
  
-    # Writing data of CSV file
-    csv_writer.writerow(song.values())
+#     # Writing data of CSV file
+#     csv_writer.writerow(song.values())
  
-data_file.close()
+# data_file.close()
