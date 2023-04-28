@@ -8,6 +8,7 @@ from pyspark.sql.functions import *
 import re
 # from pymongo import MongoClient
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import pickle
 
 os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 pyspark-shell'
 
@@ -52,9 +53,6 @@ def cleanTweet(tweet: str) -> str:
     my_punctuation = '!"$%&\'()*+,-./:;<=>?[\\]^_`{|}~•@â'
     tweet = re.sub('[' + my_punctuation + ']+', ' ', str(tweet))
 
-    # remove number
-    # tweet = re.sub('([0-9]+)', '', str(tweet))
-
     # remove hashtag
     tweet = re.sub('(#[A-Za-z]+[A-Za-z0-9-_]+)', '', str(tweet))
 
@@ -69,11 +67,6 @@ def write_row_in_mongo(df):
 conf = SparkConf().setAppName('Kafka-Sentiment-Analysis')
 sc = SparkContext(conf=conf)
 spark = SparkSession(sc)
-
-# spark = SparkSession.builder \
-#     .appName("YourAppName") \
-#     .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.0") \
-#     .getOrCreate()
 
 schema = StructType([
     StructField("id", StringType()),
@@ -102,14 +95,19 @@ df = df.withColumn("textblob_sentiment_score", sentiment_analysis_textblob_udf("
 textblob_sentiment_label_udf = udf(getTextblobSentiment, StringType())
 df = df.withColumn("textblob_sentiment", textblob_sentiment_label_udf(col("textblob_sentiment_score")))
 
+# Using SVM for analysis
+with open('svm_model.pickle', 'rb') as f:
+    svm_model = pickle.load(f)
+
+# Define a UDF to apply the SVM model to each tweet
+svm_sentiment_udf = udf(lambda tweet: svm_model.predict([tweet])[0], StringType())
+
+# Apply the SVM model to the tweets in the DataFrame
+df = df.withColumn('svm_sentiment', svm_sentiment_udf(col('processed_text')))
+
 mongoURL = "mongodb+srv://<username>:<password>@cluster0.mwzfmxm.mongodb.net/spotifycharts.cleandata" \
                "?retryWrites=true&w=majority"
 
-# write_to_mongo = df \
-#   .writeStream \
-#   .foreachBatch(lambda batch_df, batch_id: batch_df.write.format("mongo").mode("append").option("uri",mongoURL).save())
-
-# res = write_row_in_mongo(df)
 
 def write_mongo(batch_df, batch_id):
     batch_df.write.format("mongo") \
