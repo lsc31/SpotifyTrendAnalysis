@@ -7,15 +7,31 @@ import os
 from pyspark.sql.functions import *
 import re
 # from pymongo import MongoClient
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0 pyspark-shell'
 
+# Using VADER for sentiment analysis
+analyzer = SentimentIntensityAnalyzer()
 
 def sentiment_analysis(tweet):
+    vs = analyzer.polarity_scores(tweet)
+    return vs['compound']
+
+def getSentiment(polarityValue: float) -> str:
+    if polarityValue < -0.05:
+        return 'Negative'
+    elif polarityValue > 0.05:
+        return 'Positive'
+    else:
+        return 'Neutral'
+
+# Using textblob for analysis
+def textblob_sentiment_analysis(tweet):
     blob = TextBlob(tweet)
     return blob.sentiment.polarity
 
-def getSentiment(polarityValue: int) -> str:
+def getTextblobSentiment(polarityValue: int) -> str:
     if polarityValue < 0:
         return 'Negative'
     elif polarityValue == 0:
@@ -76,10 +92,15 @@ df = spark \
 
 preprocessed_udf = udf(cleanTweet,StringType())
 df = df.withColumn('processed_text', preprocessed_udf(col("tweet")))
-sentiment_analysis_udf = udf(sentiment_analysis, FloatType())
-df = df.withColumn("sentiment_score", sentiment_analysis_udf("processed_text"))
+sentiment_analysis_vader_udf = udf(sentiment_analysis, FloatType())
+df = df.withColumn("vader_sentiment_score", sentiment_analysis_vader_udf("processed_text"))
 sentiment_label_udf = udf(getSentiment, StringType())
-df = df.withColumn("sentiment", sentiment_label_udf(col("sentiment_score")))
+df = df.withColumn("vader_sentiment", sentiment_label_udf(col("vader_sentiment_score")))
+
+sentiment_analysis_textblob_udf = udf(textblob_sentiment_analysis, FloatType())
+df = df.withColumn("textblob_sentiment_score", sentiment_analysis_textblob_udf("processed_text"))
+textblob_sentiment_label_udf = udf(getTextblobSentiment, StringType())
+df = df.withColumn("textblob_sentiment", textblob_sentiment_label_udf(col("textblob_sentiment_score")))
 
 mongoURL = "mongodb+srv://<username>:<password>@cluster0.mwzfmxm.mongodb.net/spotifycharts.cleandata" \
                "?retryWrites=true&w=majority"

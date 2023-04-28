@@ -1,0 +1,8 @@
+/commits
+/offsets
+/sources
+.env
+.DS_Store
+.*.crc
+*.zip
+*.csv

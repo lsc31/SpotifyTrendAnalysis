@@ -1,5 +1,4 @@
 from kafka import KafkaProducer
-import logging
 import os
 import json
 from pymongo import MongoClient
@@ -13,7 +12,7 @@ def get_database():
 def get_collection_name(dbname):
     return dbname["tweets"]
 
-producer = KafkaProducer(bootstrap_servers='localhost:9092')
+# producer = KafkaProducer(bootstrap_servers='localhost:9092')
 # search_term = 'Search & Rescue'
 search_term = "Last Night"
 topic_name = 'twitter'
@@ -22,7 +21,6 @@ topic_name = 'twitter'
 class TweetListener():
 
     # def on_data(self, raw_data):
-    #     logging.info(raw_data)
     #     producer.send(topic_name, value=raw_data)
     #     return True
 
@@ -34,11 +32,11 @@ class TweetListener():
     def start_streaming_tweets(self, search_term, collection_name):
         raw_tweets = collection_name.find({"track":search_term})
         if(raw_tweets):
+            producer = KafkaProducer(bootstrap_servers='localhost:9092')
             for t in raw_tweets:
-                # logging.info(t)
                 print(t)
                 producer.send(topic_name, value=json.dumps(t,default=str).encode('utf-8'))
-                # producer.send(topic_name, b'Hello')
+            producer.close()
         else:
             print("No records found")
         
@@ -48,4 +46,4 @@ if __name__ == '__main__':
     collection_name = get_collection_name(dbname)
     twitter_stream = TweetListener()
     twitter_stream.start_streaming_tweets(search_term, collection_name)
-    producer.close()
+    # producer.close()

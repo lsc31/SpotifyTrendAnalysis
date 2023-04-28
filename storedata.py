@@ -14,7 +14,7 @@ def get_database():
 
 
 def get_collection_name(dbname):
-    return dbname[config["PROPERTY_COLLECTION"]]
+    return dbname[config["CHART_COLLECTION"]]
 
 
 def store_data(collection_name, spotifyData):
