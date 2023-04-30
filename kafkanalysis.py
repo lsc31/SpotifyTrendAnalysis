@@ -80,7 +80,8 @@ df = spark \
   .option("kafka.bootstrap.servers", "localhost:9092") \
   .option("subscribe", "twitter") \
   .load() \
-  .select(from_json(col("value").cast("string"), schema).alias("data")) \
+  .selectExpr("CAST(value AS STRING)")\
+  .select(from_json("value", schema).alias("data"))\
   .select("data.*")
 
 preprocessed_udf = udf(cleanTweet,StringType())
@@ -123,10 +124,13 @@ def write_mongo(batch_df, batch_id):
 #   .start()
 
 streaming_query = df \
-  .writeStream \
-  .format("console") \
-  .option("truncate", "false") \
-  .start()
+    .selectExpr("CAST(to_json(struct(*)) AS STRING) AS value") \
+    .writeStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", "localhost:9092") \
+    .option("topic", "analyzed_tweets") \
+    .option("checkpointLocation", "/tmp/project/") \
+    .start()
 
 streaming_query.awaitTermination()
 
