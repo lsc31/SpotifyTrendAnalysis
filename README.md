@@ -30,5 +30,7 @@ Start the spark analysis script - "python kafkanalysis.py"
 Start the consumer for analyzed_tweets topic to save results to Mongodb - "python analyzedDataConsumer.py"
 Start the tweet data producer - "python mongodataproducer.py -h" to show the list of songs in the chart. Issue track title as argument to run the script. For example, "python mongodataproducer.py 'Search & Rescue'".
 
+Note: Key Results can be found in the screenshots directory.
+
 
 
